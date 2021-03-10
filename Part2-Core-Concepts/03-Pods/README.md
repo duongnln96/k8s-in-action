@@ -127,4 +127,3 @@ kubia-zxzij     1/1       Running   0           1d      <none>             <none
 ```
 
 ## **3.4. Using Namespaces to group resources**
-
