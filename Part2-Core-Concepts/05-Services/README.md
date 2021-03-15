@@ -88,7 +88,7 @@ spec:
   ports:
   - port: 80            # Port of the service’s internal cluster IP
     targetPort: 8080    # Port of the backing pod
-    nodePort: 30123     # The service will be accessible via this port of each of your cluster nodes (not mandatory, it can choose random via K8S)
+    nodePort: 30123     # The service will be accessible via this port of each of your cluster nodes (not mandatory, it can choose random via K8S, port in range 30000-32767)
   selector:
     app: kubia  
 ```
@@ -151,6 +151,7 @@ spec:
           serviceName: kubia-nodeport
           servicePort: 80
 ```
+
 ## **5.5 Signaling when a pod is ready to accept connections**
 
 What happend if the pod isn’t ready to start serving requests immediately ?
@@ -185,7 +186,7 @@ spec:
         ...
 ```
 
-**Note**
+**Noted:**
 
 - You ***should always*** define a readiness probe, even if it’s as simple as sending an HTTP request to the base URL
 
