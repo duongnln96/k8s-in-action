@@ -103,3 +103,90 @@ kubia-nodeport  10.111.254.223  <nodes>       80:30123/TCP  2m
 # <1st node’s IP>:30123
 # <2nd node’s IP>:30123, and so on
 ```
+
+### **5.3.2. Exposing a service through an external load balancer**
+
+Kubernetes clusters running on cloud providers usually support the automatic provision of a load balancer from the cloud infrastructure.
+
+If Kubernetes is running in an environment that *doesn’t support LoadBalancer services*, the load balancer will not be provisioned, but the service will *still behave like a NodePort service*
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubia-loadbalancer
+spec:
+  type: LoadBalancer    # The service type is set to LoadBalancer instead of NodePort
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: kubia
+```
+
+```console
+$ kubectl get svc kubia-loadbalancer
+NAME                CLUSTER-IP      EXTERNAL-IP     PORT(S)       AGE
+kubia-loadbalancer  10.111.241.153  130.211.53.173  80:32143/TCP  1m
+```
+
+## **5.4. Exposing services externally through an INGRESS resource**
+
+One important reason is that **each LoadBalancer service requires its own load balancer with its own public IP address**, whereas an Ingress **only requires one**, even when providing access to dozens of services.
+
+### **5.4.1. Creating an Ingress resource**
+
+```yaml
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: kubia
+spec:
+  rules:
+  - host: kubia.example.com # This Ingress maps the kubia.example.com domain name
+    http:
+      paths:
+      - path: /                         # All requests will be  
+        backend:                        # sent to port 80 of the kubianodeport service.
+          serviceName: kubia-nodeport
+          servicePort: 80
+```
+## **5.5 Signaling when a pod is ready to accept connections**
+
+What happend if the pod isn’t ready to start serving requests immediately ?
+
+----
+**Readiness** - Similar to liveness probes, The readiness probe is invoked periodically and determines whether the specific pod should receive client requests or not.
+
+**Types of Readiness probes** - three types of readiness probes exist:
+
+- *Exec* probe, where a process is executed. The container’s status is determined by the process’ exit status code.
+
+- *HTTP GET* probe, which sends an HTTP GET request to the container and the HTTP status code of the response determines whether the container is ready or no
+
+- *TCP Socket* probe, which opens a TCP connection to a specified port of the container. If the connection is established, the container is considered ready.
+
+```yaml
+apiVersion: v1
+kind: ReplicationController
+...
+spec:
+  ...
+  template:
+    ...
+    spec:
+      containers:
+      - name: kubia
+        readinessProbe:
+          exec:
+            command:        # run ls /var/ready 
+            - ls            # get return code zero or non-zero
+            - /var/ready
+        ...
+```
+
+**Note**
+
+- You ***should always*** define a readiness probe, even if it’s as simple as sending an HTTP request to the base URL
+
+- ***Do not*** include Pod shutdown logic into readiness probes
